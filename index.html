@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImageConverter — Конвертация изображений</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ImageConverter</h1>
+            <p>Быстрая конвертация изображений прямо в браузере. Ваши файлы не загружаются на сервер.</p>
+        </header>
+
+        <main>
+            <div class="upload-section" id="dropZone">
+                <input type="file" id="fileInput" accept="image/*,.psd" hidden>
+                <div class="upload-content">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p class="upload-text">Перетащите изображение сюда или <span class="link">выберите файл</span></p>
+                    <p class="upload-hint">PNG, JPG, WEBP, GIF, BMP, SVG, TIFF, PSD — до 50 МБ</p>
+                </div>
+            </div>
+
+            <div class="editor" id="editor" style="display: none;">
+                <div class="editor-preview">
+                    <div class="preview-box">
+                        <h3>Исходное</h3>
+                        <div class="image-wrapper">
+                            <img id="sourceImage" alt="Исходное изображение">
+                        </div>
+                        <div class="file-info" id="sourceInfo"></div>
+                    </div>
+                    <div class="arrow">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                            <polyline points="12 5 19 12 12 19"/>
+                        </svg>
+                    </div>
+                    <div class="preview-box">
+                        <h3>Результат</h3>
+                        <div class="image-wrapper">
+                            <img id="resultImage" alt="Результат">
+                        </div>
+                        <div class="file-info" id="resultInfo"></div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="formatSelect">Формат</label>
+                        <select id="formatSelect">
+                            <option value="image/png">PNG</option>
+                            <option value="image/jpeg" selected>JPEG</option>
+                            <option value="image/webp">WebP</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group" id="qualityGroup">
+                        <label for="qualityRange">Качество: <span id="qualityValue">90</span>%</label>
+                        <input type="range" id="qualityRange" min="1" max="100" value="90">
+                    </div>
+
+                    <div class="control-group resize-controls">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="resizeCheck">
+                            <span>Изменить размер</span>
+                        </label>
+                        <div class="resize-inputs" id="resizeInputs" style="display: none;">
+                            <div class="dimension-input">
+                                <label>Ширина</label>
+                                <input type="number" id="widthInput" min="1">
+                            </div>
+                            <div class="dimension-separator">×</div>
+                            <div class="dimension-input">
+                                <label>Высота</label>
+                                <input type="number" id="heightInput" min="1">
+                            </div>
+                            <label class="checkbox-label lock-label">
+                                <input type="checkbox" id="aspectLock" checked>
+                                <span>Сохранять пропорции</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button class="btn btn-secondary" id="resetBtn">Новое изображение</button>
+                    <button class="btn btn-primary" id="downloadBtn">Скачать</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Работает полностью в браузере. Никакие данные не отправляются на сервер.</p>
+        </footer>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
