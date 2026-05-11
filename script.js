@@ -84,11 +84,32 @@ async function processFile(file) {
             const buffer = await file.arrayBuffer();
             const psdFile = Psd.parse(buffer);
             const composite = psdFile.composite();
+            
+            console.log('PSD debug:', { composite, width: composite?.width, height: composite?.height, dataLen: composite?.data?.length });
+            
+            if (!composite || !composite.width || !composite.height) {
+                throw new Error('Invalid composite dimensions');
+            }
+            
             const canvas = document.createElement('canvas');
             canvas.width = composite.width;
             canvas.height = composite.height;
             const ctx = canvas.getContext('2d');
-            const imageData = new ImageData(composite.data, composite.width, composite.height);
+            
+            let pixels;
+            if (composite.data instanceof Uint8ClampedArray) {
+                pixels = composite.data;
+            } else if (composite.data instanceof Uint8Array) {
+                pixels = new Uint8ClampedArray(composite.data);
+            } else {
+                throw new Error('Unknown pixel data format');
+            }
+            
+            if (pixels.length !== composite.width * composite.height * 4) {
+                throw new Error(`Invalid pixel data size: ${pixels.length} vs ${composite.width * composite.height * 4}`);
+            }
+            
+            const imageData = new ImageData(pixels, composite.width, composite.height);
             ctx.putImageData(imageData, 0, 0);
             const dataUrl = canvas.toDataURL('image/png');
 
