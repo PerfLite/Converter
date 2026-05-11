@@ -1,5 +1,3 @@
-import Psd from 'https://cdn.skypack.dev/@webtoon/psd@0.4.0';
-
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const editor = document.getElementById('editor');
@@ -76,45 +74,48 @@ async function processFile(file) {
 
     if (isPsd) {
         try {
-            if (typeof Psd === 'undefined' || !Psd.parse) {
-                showToast('Библиотека PSD не загрузилась. Проверьте подключение к интернету.');
-                console.error('Psd is undefined or missing parse method:', Psd);
+            if (typeof readPsd === 'undefined') {
+                showToast('Библиотека PSD не загрузилась');
+                console.error('readPsd is undefined');
                 return;
             }
             const buffer = await file.arrayBuffer();
-            const psdFile = Psd.parse(buffer);
-            const composite = psdFile.composite();
+            const psd = readPsd(buffer);
             
-            console.log('PSD debug:', { composite, width: composite?.width, height: composite?.height, dataLen: composite?.data?.length });
-            
-            if (!composite || !composite.width || !composite.height) {
-                throw new Error('Invalid composite dimensions');
-            }
+            console.log('PSD debug ag-psd:', psd);
             
             const canvas = document.createElement('canvas');
-            canvas.width = composite.width;
-            canvas.height = composite.height;
+            canvas.width = psd.width;
+            canvas.height = psd.height;
             const ctx = canvas.getContext('2d');
             
-            let pixels;
-            if (composite.data instanceof Uint8ClampedArray) {
-                pixels = composite.data;
-            } else if (composite.data instanceof Uint8Array) {
-                pixels = new Uint8ClampedArray(composite.data);
+            if (psd.canvas) {
+                ctx.drawImage(psd.canvas, 0, 0);
+            } else if (psd.image) {
+                const imageData = ctx.createImageData(psd.width, psd.height);
+                if (psd.image.channels) {
+                    const channels = psd.image.channels;
+                    const data = imageData.data;
+                    for (let y = 0; y < psd.height; y++) {
+                        for (let x = 0; x < psd.width; x++) {
+                            const idx = (y * psd.width + x) * 4;
+                            const chIdx = y * psd.width + x;
+                            if (channels[0]) data[idx] = channels[0][chIdx] || 0;
+                            if (channels[1]) data[idx + 1] = channels[1][chIdx] || 0;
+                            if (channels[2]) data[idx + 2] = channels[2][chIdx] || 0;
+                            data[idx + 3] = 255;
+                        }
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+                }
             } else {
-                throw new Error('Unknown pixel data format');
+                throw new Error('Нет данных изображения в PSD');
             }
             
-            if (pixels.length !== composite.width * composite.height * 4) {
-                throw new Error(`Invalid pixel data size: ${pixels.length} vs ${composite.width * composite.height * 4}`);
-            }
-            
-            const imageData = new ImageData(pixels, composite.width, composite.height);
-            ctx.putImageData(imageData, 0, 0);
             const dataUrl = canvas.toDataURL('image/png');
 
-            originalWidth = composite.width;
-            originalHeight = composite.height;
+            originalWidth = psd.width;
+            originalHeight = psd.height;
             sourceImage.src = dataUrl;
             sourceInfo.textContent = `${originalWidth}×${originalHeight} пикс. • ${formatBytes(file.size)} • PSD`;
         } catch (e) {
