@@ -74,50 +74,41 @@ async function processFile(file) {
 
     if (isPsd) {
         try {
-            if (typeof readPsd === 'undefined') {
+            if (typeof PSD === 'undefined') {
                 showToast('Библиотека PSD не загрузилась');
-                console.error('readPsd is undefined');
+                console.error('PSD is undefined');
                 return;
             }
-            const buffer = await file.arrayBuffer();
-            const psd = readPsd(buffer);
             
-            console.log('PSD debug ag-psd:', psd);
+            const psd = await PSD.fromArrayBuffer(await file.arrayBuffer());
+            console.log('PSD loaded:', psd);
             
             const canvas = document.createElement('canvas');
-            canvas.width = psd.width;
-            canvas.height = psd.height;
+            canvas.width = psd.header.width;
+            canvas.height = psd.header.height;
             const ctx = canvas.getContext('2d');
             
-            if (psd.canvas) {
-                ctx.drawImage(psd.canvas, 0, 0);
-            } else if (psd.image) {
-                const imageData = ctx.createImageData(psd.width, psd.height);
-                if (psd.image.channels) {
-                    const channels = psd.image.channels;
-                    const data = imageData.data;
-                    for (let y = 0; y < psd.height; y++) {
-                        for (let x = 0; x < psd.width; x++) {
-                            const idx = (y * psd.width + x) * 4;
-                            const chIdx = y * psd.width + x;
-                            if (channels[0]) data[idx] = channels[0][chIdx] || 0;
-                            if (channels[1]) data[idx + 1] = channels[1][chIdx] || 0;
-                            if (channels[2]) data[idx + 2] = channels[2][chIdx] || 0;
-                            data[idx + 3] = 255;
-                        }
-                    }
-                    ctx.putImageData(imageData, 0, 0);
-                }
-            } else {
-                throw new Error('Нет данных изображения в PSD');
-            }
-            
+            // Используем встроенный метод для рендера
+            const image = psd.image.toPng();
             const dataUrl = canvas.toDataURL('image/png');
-
-            originalWidth = psd.width;
-            originalHeight = psd.height;
-            sourceImage.src = dataUrl;
-            sourceInfo.textContent = `${originalWidth}×${originalHeight} пикс. • ${formatBytes(file.size)} • PSD`;
+            
+            // Рендерим через временный canvas
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                ctx.drawImage(tempImg, 0, 0);
+                const finalDataUrl = canvas.toDataURL('image/png');
+                originalWidth = psd.header.width;
+                originalHeight = psd.header.height;
+                sourceImage.src = finalDataUrl;
+                sourceInfo.textContent = `${originalWidth}×${originalHeight} пикс. • ${formatBytes(file.size)} • PSD`;
+                
+                widthInput.value = originalWidth;
+                heightInput.value = originalHeight;
+                dropZone.style.display = 'none';
+                editor.style.display = 'block';
+                updateConversion();
+            };
+            tempImg.src = image.toDataURL();
         } catch (e) {
             showToast('Ошибка PSD: ' + (e.message || e));
             console.error('PSD parse error:', e);
