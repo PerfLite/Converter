@@ -1,4 +1,4 @@
-import Psd from 'https://cdn.jsdelivr.net/npm/@webtoon/psd@0.4.0/+esm';
+import { Psd } from 'https://esm.sh/@webtoon/psd@0.4.0';
 
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
@@ -76,6 +76,11 @@ async function processFile(file) {
 
     if (isPsd) {
         try {
+            if (typeof Psd === 'undefined' || !Psd.parse) {
+                showToast('Библиотека PSD не загрузилась. Проверьте подключение к интернету.');
+                console.error('Psd is undefined or missing parse method:', Psd);
+                return;
+            }
             const buffer = await file.arrayBuffer();
             const psdFile = Psd.parse(buffer);
             const composite = psdFile.composite();
@@ -92,8 +97,8 @@ async function processFile(file) {
             sourceImage.src = dataUrl;
             sourceInfo.textContent = `${originalWidth}×${originalHeight} пикс. • ${formatBytes(file.size)} • PSD`;
         } catch (e) {
-            showToast('Не удалось прочитать PSD файл');
-            console.error(e);
+            showToast('Ошибка PSD: ' + (e.message || e));
+            console.error('PSD parse error:', e);
             return;
         }
     } else {
@@ -224,8 +229,8 @@ resetBtn.addEventListener('click', () => {
     resizeCheck.checked = false;
     resizeInputs.style.display = 'none';
     formatSelect.value = 'image/jpeg';
-    qualityRange.value = 90;
-    qualityValue.textContent = '90';
+    qualityRange.value = 100;
+    qualityValue.textContent = '100';
     qualityGroup.style.display = 'block';
 });
 
