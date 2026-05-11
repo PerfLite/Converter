@@ -1,4 +1,4 @@
-import Psd from 'https://esm.sh/@webtoon/psd@0.4.0';
+import Psd from 'https://cdn.skypack.dev/@webtoon/psd@0.4.0';
 
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
