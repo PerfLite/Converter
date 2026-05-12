@@ -4,46 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ImageConverter — Конвертация изображений</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
+
         <header>
-            <h1>ImageConverter</h1>
-            <p>Быстрая конвертация изображений прямо в браузере. Ваши файлы не загружаются на сервер.</p>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                </div>
+                <h1>ImageConverter</h1>
+            </div>
+
         </header>
 
         <main>
+            <!-- Upload -->
             <div class="upload-section" id="dropZone">
                 <input type="file" id="fileInput" accept="image/*,.psd" hidden>
-                <div class="upload-content">
-                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="upload-icon-wrap">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="17 8 12 3 7 8"/>
                         <line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
-                    <p class="upload-text">Перетащите изображение сюда или <span class="link">выберите файл</span></p>
-                    <p class="upload-hint">PNG, JPG, WEBP, GIF, BMP, SVG, TIFF, PSD — до 50 МБ</p>
+                </div>
+                <p class="upload-text">Перетащите файл сюда или <span class="link">выберите с устройства</span></p>
+                <p class="upload-hint">До 50 МБ</p>
+                <div class="upload-formats">
+                    <span class="format-tag">PNG</span>
+                    <span class="format-tag">JPG</span>
+                    <span class="format-tag">WEBP</span>
+                    <span class="format-tag">GIF</span>
+                    <span class="format-tag">BMP</span>
+                    <span class="format-tag">SVG</span>
+                    <span class="format-tag">TIFF</span>
+                    <span class="format-tag">PSD</span>
                 </div>
             </div>
 
+            <!-- Editor -->
             <div class="editor" id="editor" style="display: none;">
+
                 <div class="editor-preview">
+                    <!-- Source -->
                     <div class="preview-box">
-                        <h3>Исходное</h3>
+                        <div class="preview-header">
+                            <span class="preview-label">Исходное</span>
+                            <span class="preview-badge" id="sourceBadge">—</span>
+                        </div>
                         <div class="image-wrapper">
                             <img id="sourceImage" alt="Исходное изображение">
                         </div>
                         <div class="file-info" id="sourceInfo"></div>
                     </div>
-                    <div class="arrow">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
+
+                    <!-- Arrow -->
+                    <div class="arrow-wrap">
+                        <div class="arrow">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                        </div>
                     </div>
+
+                    <!-- Result -->
                     <div class="preview-box">
-                        <h3>Результат</h3>
+                        <div class="preview-header">
+                            <span class="preview-label">Результат</span>
+                            <span class="preview-badge" id="resultBadge">—</span>
+                        </div>
                         <div class="image-wrapper">
                             <img id="resultImage" alt="Результат">
                         </div>
@@ -51,9 +89,10 @@
                     </div>
                 </div>
 
+                <!-- Controls -->
                 <div class="controls">
                     <div class="control-group">
-                        <label for="formatSelect">Формат</label>
+                        <label for="formatSelect">Формат вывода</label>
                         <select id="formatSelect">
                             <option value="image/png">PNG</option>
                             <option value="image/jpeg" selected>JPEG</option>
@@ -62,7 +101,10 @@
                     </div>
 
                     <div class="control-group" id="qualityGroup">
-                        <label for="qualityRange">Качество: <span id="qualityValue">100</span>%</label>
+                        <div class="quality-header">
+                            <span>Качество</span>
+                            <span class="quality-val"><span id="qualityValue">100</span>%</span>
+                        </div>
                         <input type="range" id="qualityRange" min="1" max="100" value="100">
                     </div>
 
@@ -89,16 +131,35 @@
                     </div>
                 </div>
 
+                <!-- Actions -->
                 <div class="actions">
-                    <button class="btn btn-secondary" id="resetBtn">Новое изображение</button>
-                    <button class="btn btn-primary" id="downloadBtn">Скачать</button>
+                    <button class="btn btn-secondary" id="resetBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="1 4 1 10 7 10"/>
+                            <path d="M3.51 15a9 9 0 1 0 .49-3.5"/>
+                        </svg>
+                        Новое изображение
+                    </button>
+                    <button class="btn btn-primary" id="downloadBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Скачать
+                    </button>
                 </div>
+
             </div>
         </main>
 
         <footer>
-            <p>Работает полностью в браузере. Никакие данные не отправляются на сервер.</p>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Конвертация происходит локально. Никакие данные не отправляются на сервер.
         </footer>
+
     </div>
 
     <div class="toast" id="toast"></div>

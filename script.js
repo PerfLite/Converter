@@ -5,6 +5,8 @@ const sourceImage = document.getElementById('sourceImage');
 const resultImage = document.getElementById('resultImage');
 const sourceInfo = document.getElementById('sourceInfo');
 const resultInfo = document.getElementById('resultInfo');
+const sourceBadge = document.getElementById('sourceBadge');
+const resultBadge = document.getElementById('resultBadge');
 const formatSelect = document.getElementById('formatSelect');
 const qualityRange = document.getElementById('qualityRange');
 const qualityValue = document.getElementById('qualityValue');
@@ -25,11 +27,10 @@ let isConverting = false;
 
 function showToast(message, isError = false) {
     toast.textContent = message;
-    toast.style.borderColor = isError ? '#ef4444' : '';
+    toast.classList.toggle('error', isError);
     toast.classList.add('show');
     setTimeout(() => {
         toast.classList.remove('show');
-        toast.style.borderColor = '';
     }, 3000);
 }
 
@@ -68,7 +69,8 @@ function showEditor(dataUrl, width, height, label) {
     originalHeight = height;
 
     sourceImage.src = dataUrl;
-    sourceInfo.textContent = `${width}×${height} пикс. • ${formatBytes(currentFile.size)} • ${label}`;
+    sourceInfo.textContent = `${width}×${height} пикс. • ${formatBytes(currentFile.size)}`;
+    sourceBadge.textContent = label;
 
     widthInput.value = width;
     heightInput.value = height;
@@ -175,7 +177,9 @@ function convertImage() {
 
         const base64 = dataUrl.split(',')[1];
         const resultSize = Math.ceil((base64.length * 3) / 4);
-        resultInfo.textContent = `${targetWidth}×${targetHeight} пикс. • ${formatBytes(resultSize)} • ${getExtension(mime).toUpperCase()}`;
+        const ext = getExtension(mime).toUpperCase();
+        resultInfo.textContent = `${targetWidth}×${targetHeight} пикс. • ${formatBytes(resultSize)}`;
+        resultBadge.textContent = ext;
 
         isConverting = false;
     };
@@ -263,6 +267,8 @@ resetBtn.addEventListener('click', () => {
     resultImage.src = '';
     sourceInfo.textContent = '';
     resultInfo.textContent = '';
+    sourceBadge.textContent = '—';
+    resultBadge.textContent = '—';
     resizeCheck.checked = false;
     resizeInputs.style.display = 'none';
     formatSelect.value = 'image/jpeg';
