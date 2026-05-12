@@ -521,17 +521,20 @@ downloadBtn.addEventListener('click', async () => {
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
-    if (editor.style.display === 'none') return;
+    // Работаем только когда редактор видим
+    if (!currentFile) return;
+
     const tag = document.activeElement.tagName;
+    // Не перехватываем когда фокус в поле ввода
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
 
-    if (e.key === 'Escape') { fullReset(); return; }
+    if (e.key === 'Escape') { e.preventDefault(); fullReset(); return; }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         downloadBtn.click();
         return;
     }
-    if (e.key === 'r' || e.key === 'R') { rotateRightBtn.click(); return; }
-    if (e.key === 'h' || e.key === 'H') { flipHBtn.click(); return; }
-    if (e.key === 'v' || e.key === 'V') { flipVBtn.click(); return; }
+    if (e.key === 'r' || e.key === 'R') { e.preventDefault(); rotateRightBtn.click(); return; }
+    if (e.key === 'h' || e.key === 'H') { e.preventDefault(); flipHBtn.click(); return; }
+    if (e.key === 'v' || e.key === 'V') { e.preventDefault(); flipVBtn.click(); return; }
 });
