@@ -84,8 +84,8 @@ header h1 {
     font-weight: 700;
     letter-spacing: -0.02em;
     background: linear-gradient(90deg,
-        var(--capu-600) 0%, var(--capu-400) 20%, #e8c99a 40%,
-        var(--capu-300) 50%, #e8c99a 60%, var(--capu-400) 80%, var(--capu-600) 100%);
+        #c8956c 0%, #e8c99a 20%, #fde8c8 40%,
+        #f5d4a0 50%, #fde8c8 60%, #e8c99a 80%, #c8956c 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
