@@ -87,15 +87,12 @@ async function parsePsd(file) {
     const arrayBuffer = await file.arrayBuffer();
 
     // ag-psd требует инициализации canvas-фабрики в браузере
-    agPsd.initializeCanvas(
-        (width, height) => {
-            const c = document.createElement('canvas');
-            c.width = width;
-            c.height = height;
-            return c;
-        },
-        (canvas) => canvas.getContext('2d')
-    );
+    agPsd.initializeCanvas((width, height) => {
+        const c = document.createElement('canvas');
+        c.width = width;
+        c.height = height;
+        return c;
+    });
 
     const psd = agPsd.readPsd(arrayBuffer);
 
