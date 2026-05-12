@@ -663,9 +663,13 @@ header {
 .h1--audio {
     background: linear-gradient(90deg,
         #4a6cf7 0%, #6e8efb 25%, #a78bfa 50%,
-        #6e8efb 75%, #4a6cf7 100%) !important;
-    background-size: 200% auto !important;
-    animation: shimmer 4s linear infinite !important;
+        #6e8efb 75%, #4a6cf7 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: shimmer 4s linear infinite;
 }
 
 /* ══════════════════════════════════════════════════════
