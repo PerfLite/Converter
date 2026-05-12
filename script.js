@@ -80,26 +80,33 @@ function showEditor(dataUrl, width, height, label) {
 }
 
 async function parsePsd(file) {
-    // Ждём пока PSD загрузится из CDN (может быть не сразу доступна)
-    if (typeof PSD === 'undefined') {
-        throw new Error('Библиотека PSD.js не загружена. Проверьте подключение к интернету.');
+    if (typeof agPsd === 'undefined') {
+        throw new Error('Библиотека ag-psd не загружена. Проверьте подключение к интернету.');
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const psd = await PSD.fromArrayBuffer(arrayBuffer);
-    await psd.parse();
 
-    // Получаем PNG через встроенный метод psd.js
-    const pngDataUrl = psd.image.toDataURL();
+    // ag-psd требует инициализации canvas-фабрики в браузере
+    agPsd.initializeCanvas(
+        (width, height) => {
+            const c = document.createElement('canvas');
+            c.width = width;
+            c.height = height;
+            return c;
+        },
+        (canvas) => canvas.getContext('2d')
+    );
 
-    if (!pngDataUrl || pngDataUrl === 'data:,') {
-        throw new Error('PSD файл не содержит данных изображения или повреждён');
+    const psd = agPsd.readPsd(arrayBuffer);
+
+    if (!psd.canvas) {
+        throw new Error('PSD файл не содержит данных изображения. Убедитесь, что файл сохранён с включённой опцией "Maximize Compatibility".');
     }
 
     return {
-        dataUrl: pngDataUrl,
-        width: psd.header.width,
-        height: psd.header.height
+        dataUrl: psd.canvas.toDataURL('image/png'),
+        width: psd.width,
+        height: psd.height
     };
 }
 
