@@ -23,10 +23,14 @@ let originalWidth = 0;
 let originalHeight = 0;
 let isConverting = false;
 
-function showToast(message) {
+function showToast(message, isError = false) {
     toast.textContent = message;
+    toast.style.borderColor = isError ? '#ef4444' : '';
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2500);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        toast.style.borderColor = '';
+    }, 3000);
 }
 
 function formatBytes(bytes) {
@@ -50,81 +54,24 @@ function isPsdFile(file) {
     return file.name.toLowerCase().endsWith('.psd');
 }
 
-function loadImage(file) {
+function loadImage(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = URL.createObjectURL(file);
+        img.onerror = () => reject(new Error('Не удалось загрузить изображение'));
+        img.src = src;
     });
 }
 
-async function processFile(file) {
-    const isPsd = isPsdFile(file);
-    if (!file.type.startsWith('image/') && !isPsd) {
-        showToast('Пожалуйста, выберите файл изображения');
-        return;
-    }
-    if (file.size > 50 * 1024 * 1024) {
-        showToast('Файл слишком большой (макс. 50 МБ)');
-        return;
-    }
+function showEditor(dataUrl, width, height, label) {
+    originalWidth = width;
+    originalHeight = height;
 
-    currentFile = file;
+    sourceImage.src = dataUrl;
+    sourceInfo.textContent = `${width}×${height} пикс. • ${formatBytes(currentFile.size)} • ${label}`;
 
-    if (isPsd) {
-        try {
-            if (typeof PSD === 'undefined') {
-                showToast('Библиотека PSD не загрузилась');
-                console.error('PSD is undefined');
-                return;
-            }
-            
-            const psd = await PSD.fromArrayBuffer(await file.arrayBuffer());
-            console.log('PSD loaded:', psd);
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = psd.header.width;
-            canvas.height = psd.header.height;
-            const ctx = canvas.getContext('2d');
-            
-            // Используем встроенный метод для рендера
-            const image = psd.image.toPng();
-            const dataUrl = canvas.toDataURL('image/png');
-            
-            // Рендерим через временный canvas
-            const tempImg = new Image();
-            tempImg.onload = () => {
-                ctx.drawImage(tempImg, 0, 0);
-                const finalDataUrl = canvas.toDataURL('image/png');
-                originalWidth = psd.header.width;
-                originalHeight = psd.header.height;
-                sourceImage.src = finalDataUrl;
-                sourceInfo.textContent = `${originalWidth}×${originalHeight} пикс. • ${formatBytes(file.size)} • PSD`;
-                
-                widthInput.value = originalWidth;
-                heightInput.value = originalHeight;
-                dropZone.style.display = 'none';
-                editor.style.display = 'block';
-                updateConversion();
-            };
-            tempImg.src = image.toDataURL();
-        } catch (e) {
-            showToast('Ошибка PSD: ' + (e.message || e));
-            console.error('PSD parse error:', e);
-            return;
-        }
-    } else {
-        const img = await loadImage(file);
-        originalWidth = img.naturalWidth;
-        originalHeight = img.naturalHeight;
-
-        sourceImage.src = img.src;
-        sourceInfo.textContent = `${originalWidth}×${originalHeight} пикс. • ${formatBytes(file.size)} • ${file.type.replace('image/', '').toUpperCase()}`;
-    }
-
-    widthInput.value = originalWidth;
-    heightInput.value = originalHeight;
+    widthInput.value = width;
+    heightInput.value = height;
 
     dropZone.style.display = 'none';
     editor.style.display = 'block';
@@ -132,8 +79,64 @@ async function processFile(file) {
     updateConversion();
 }
 
+async function parsePsd(file) {
+    // Ждём пока PSD загрузится из CDN (может быть не сразу доступна)
+    if (typeof PSD === 'undefined') {
+        throw new Error('Библиотека PSD.js не загружена. Проверьте подключение к интернету.');
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const psd = await PSD.fromArrayBuffer(arrayBuffer);
+    await psd.parse();
+
+    // Получаем PNG через встроенный метод psd.js
+    const pngDataUrl = psd.image.toDataURL();
+
+    if (!pngDataUrl || pngDataUrl === 'data:,') {
+        throw new Error('PSD файл не содержит данных изображения или повреждён');
+    }
+
+    return {
+        dataUrl: pngDataUrl,
+        width: psd.header.width,
+        height: psd.header.height
+    };
+}
+
+async function processFile(file) {
+    const isPsd = isPsdFile(file);
+
+    if (!file.type.startsWith('image/') && !isPsd) {
+        showToast('Пожалуйста, выберите файл изображения', true);
+        return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+        showToast('Файл слишком большой (макс. 50 МБ)', true);
+        return;
+    }
+
+    currentFile = file;
+    showToast('Загрузка...');
+
+    try {
+        if (isPsd) {
+            const { dataUrl, width, height } = await parsePsd(file);
+            showEditor(dataUrl, width, height, 'PSD');
+        } else {
+            const objectUrl = URL.createObjectURL(file);
+            const img = await loadImage(objectUrl);
+            const label = file.type.replace('image/', '').toUpperCase() || file.name.split('.').pop().toUpperCase();
+            showEditor(objectUrl, img.naturalWidth, img.naturalHeight, label);
+        }
+    } catch (e) {
+        showToast('Ошибка: ' + (e.message || 'Не удалось обработать файл'), true);
+        console.error('processFile error:', e);
+        currentFile = null;
+    }
+}
+
 function convertImage() {
-    if (!currentFile || isConverting) return;
+    if (!sourceImage.src || !currentFile || isConverting) return;
     isConverting = true;
 
     const canvas = document.createElement('canvas');
@@ -150,14 +153,14 @@ function convertImage() {
     canvas.width = targetWidth;
     canvas.height = targetHeight;
 
-    // Белый фон для JPEG, если есть прозрачность
-    if (formatSelect.value === 'image/jpeg') {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, targetWidth, targetHeight);
-    }
-
     const img = new Image();
     img.onload = () => {
+        // Белый фон для JPEG (убирает прозрачность)
+        if (formatSelect.value === 'image/jpeg') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, targetWidth, targetHeight);
+        }
+
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
         const mime = formatSelect.value;
@@ -172,6 +175,10 @@ function convertImage() {
 
         isConverting = false;
     };
+    img.onerror = () => {
+        showToast('Ошибка при конвертации', true);
+        isConverting = false;
+    };
     img.src = sourceImage.src;
 }
 
@@ -179,13 +186,20 @@ function updateConversion() {
     requestAnimationFrame(convertImage);
 }
 
-// Events
+// --- Drag & Drop ---
 dropZone.addEventListener('click', () => fileInput.click());
+
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropZone.classList.add('dragover');
 });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+dropZone.addEventListener('dragleave', (e) => {
+    if (!dropZone.contains(e.relatedTarget)) {
+        dropZone.classList.remove('dragover');
+    }
+});
+
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.classList.remove('dragover');
@@ -196,8 +210,10 @@ dropZone.addEventListener('drop', (e) => {
 fileInput.addEventListener('change', () => {
     const file = fileInput.files[0];
     if (file) processFile(file);
+    fileInput.value = ''; // сброс, чтобы можно было выбрать тот же файл снова
 });
 
+// --- Настройки конвертации ---
 formatSelect.addEventListener('change', () => {
     qualityGroup.style.display = formatSelect.value === 'image/png' ? 'none' : 'block';
     updateConversion();
@@ -217,28 +233,32 @@ resizeCheck.addEventListener('change', () => {
     updateConversion();
 });
 
-function updateAspect(current, isWidth) {
-    if (!aspectLock.checked) return;
+function updateAspect(value, isWidth) {
+    if (!aspectLock.checked || !value) return;
     const ratio = originalWidth / originalHeight;
     if (isWidth) {
-        heightInput.value = Math.round(parseInt(current) / ratio);
+        heightInput.value = Math.round(parseInt(value) / ratio) || 1;
     } else {
-        widthInput.value = Math.round(parseInt(current) * ratio);
+        widthInput.value = Math.round(parseInt(value) * ratio) || 1;
     }
 }
 
 widthInput.addEventListener('input', () => updateAspect(widthInput.value, true));
 heightInput.addEventListener('input', () => updateAspect(heightInput.value, false));
 
-[widthInput, heightInput].forEach(el => {
-    el.addEventListener('change', updateConversion);
-});
+widthInput.addEventListener('change', updateConversion);
+heightInput.addEventListener('change', updateConversion);
 
+// --- Кнопки ---
 resetBtn.addEventListener('click', () => {
     editor.style.display = 'none';
     dropZone.style.display = 'block';
-    fileInput.value = '';
     currentFile = null;
+    isConverting = false;
+    sourceImage.src = '';
+    resultImage.src = '';
+    sourceInfo.textContent = '';
+    resultInfo.textContent = '';
     resizeCheck.checked = false;
     resizeInputs.style.display = 'none';
     formatSelect.value = 'image/jpeg';
@@ -248,11 +268,14 @@ resetBtn.addEventListener('click', () => {
 });
 
 downloadBtn.addEventListener('click', () => {
-    if (!resultImage.src) return;
+    if (!resultImage.src || resultImage.src === window.location.href) {
+        showToast('Сначала загрузите изображение', true);
+        return;
+    }
     const link = document.createElement('a');
     const ext = getExtension(formatSelect.value);
-    const name = currentFile.name.replace(/\.[^/.]+$/, '') + '_converted.' + ext;
-    link.download = name;
+    const baseName = currentFile.name.replace(/\.[^/.]+$/, '');
+    link.download = `${baseName}_converted.${ext}`;
     link.href = resultImage.src;
     link.click();
     showToast('Скачивание началось');
